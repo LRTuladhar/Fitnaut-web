@@ -58,11 +58,22 @@ export default function ManualEntryDrawer({ open, onClose, onSuccess, editExerci
   );
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return definitions.slice(0, 40);
+    if (!search.trim()) return [];
     const q = search.toLowerCase();
     return definitions
-      .filter((d) => d.name.toLowerCase().includes(q) || d.alternate_names.some((a) => a.toLowerCase().includes(q)))
-      .slice(0, 40);
+      .filter((d) => d.name.toLowerCase().includes(q) || d.alternate_names.some((a) => a.toLowerCase().includes(q)));
+  }, [search, definitions]);
+
+  const grouped = useMemo(() => {
+    if (search.trim()) return null;
+    const order = ["strength", "cardio", "sports", "flexibility"];
+    const map = new Map<string, ExerciseDefinition[]>();
+    for (const def of definitions) {
+      const key = def.type ?? "other";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(def);
+    }
+    return order.filter((t) => map.has(t)).map((t) => ({ type: t, exercises: map.get(t)! }));
   }, [search, definitions]);
 
   function pickExercise(def: ExerciseDefinition) {
@@ -84,6 +95,7 @@ export default function ManualEntryDrawer({ open, onClose, onSuccess, editExerci
           search={search}
           onSearch={setSearch}
           filtered={filtered}
+          grouped={grouped}
           recent={recentDefs}
           onPick={pickExercise}
         />
@@ -132,10 +144,39 @@ export default function ManualEntryDrawer({ open, onClose, onSuccess, editExerci
   );
 }
 
-function ExercisePicker({ search, onSearch, filtered, recent, onPick }: {
+const TYPE_LABEL: Record<string, string> = {
+  strength: "Strength",
+  cardio: "Cardio",
+  sports: "Sports",
+  flexibility: "Flexibility",
+};
+
+function ExerciseList({ exercises, onPick }: { exercises: ExerciseDefinition[]; onPick: (d: ExerciseDefinition) => void }) {
+  return (
+    <ul className="space-y-0.5">
+      {exercises.map((def) => (
+        <li key={def.id}>
+          <button onClick={() => onPick(def)}
+            className="w-full text-left px-1 py-3 flex items-center justify-between border-b border-border/50 last:border-0 active:bg-secondary/50 rounded-lg transition-colors">
+            <div>
+              <p className="text-sm font-medium">{def.name}</p>
+              <p className="text-xs text-muted-foreground capitalize mt-0.5">
+                {def.muscle_groups?.length ? def.muscle_groups.slice(0, 2).join(", ") : def.type}
+              </p>
+            </div>
+            <ChevronLeft className="w-4 h-4 text-muted-foreground rotate-180 flex-shrink-0" />
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function ExercisePicker({ search, onSearch, filtered, grouped, recent, onPick }: {
   search: string;
   onSearch: (s: string) => void;
   filtered: ExerciseDefinition[];
+  grouped: { type: string; exercises: ExerciseDefinition[] }[] | null;
   recent: ExerciseDefinition[];
   onPick: (d: ExerciseDefinition) => void;
 }) {
@@ -169,27 +210,20 @@ function ExercisePicker({ search, onSearch, filtered, recent, onPick }: {
             </div>
           </section>
         )}
-        <section>
-          {!search && (
-            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2.5">All Exercises</p>
-          )}
-          <ul className="space-y-0.5">
-            {filtered.map((def) => (
-              <li key={def.id}>
-                <button onClick={() => onPick(def)}
-                  className="w-full text-left px-1 py-3 flex items-center justify-between border-b border-border/50 last:border-0 active:bg-secondary/50 rounded-lg transition-colors">
-                  <div>
-                    <p className="text-sm font-medium">{def.name}</p>
-                    <p className="text-xs text-muted-foreground capitalize mt-0.5">
-                      {def.type}{def.muscle_groups?.length ? ` · ${def.muscle_groups.slice(0, 2).join(", ")}` : ""}
-                    </p>
-                  </div>
-                  <ChevronLeft className="w-4 h-4 text-muted-foreground rotate-180 flex-shrink-0" />
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
+        {grouped ? (
+          grouped.map(({ type, exercises }) => (
+            <section key={type}>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-2.5">
+                {TYPE_LABEL[type] ?? type}
+              </p>
+              <ExerciseList exercises={exercises} onPick={onPick} />
+            </section>
+          ))
+        ) : (
+          <section>
+            <ExerciseList exercises={filtered} onPick={onPick} />
+          </section>
+        )}
       </div>
     </div>
   );
