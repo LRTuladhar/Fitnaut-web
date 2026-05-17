@@ -112,10 +112,10 @@ export default function ManualEntryDrawer({ open, onClose, onSuccess, editExerci
           weightUnit={weightUnit}
           onWeightUnitToggle={() => setWeightUnit((u) => (u === "lbs" ? "kg" : "lbs"))}
           onBack={editExercise ? handleClose : () => setStep("pick")}
-          isEditing={!!editExercise}
+          isEditing={!!editExercise?.id}
           onSubmit={async (values) => {
             try {
-              if (editExercise) {
+              if (editExercise?.id) {
                 await updateExercise.mutateAsync({ id: editExercise.id, ...values });
                 toast("Set updated");
               } else {
