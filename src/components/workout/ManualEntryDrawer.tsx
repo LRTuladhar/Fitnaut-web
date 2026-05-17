@@ -37,7 +37,7 @@ export default function ManualEntryDrawer({ open, onClose, onSuccess, editExerci
   const [weightUnit, setWeightUnit] = useState<"lbs" | "kg">("lbs");
   const { data: definitions = [] } = useExerciseDefinitions();
   const { data: recentIds = [] } = useRecentExercises();
-  const { data: lastSet, isPending: lastSetPending } = useLastExerciseSet(!editExercise && selected ? selected.name : null);
+  const { data: lastSet, isLoading: lastSetPending } = useLastExerciseSet(!editExercise && selected ? selected.name : null);
   const logExercise = useLogExercise();
   const updateExercise = useUpdateExercise();
   const { toast } = useToast();
