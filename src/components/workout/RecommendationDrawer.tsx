@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { BottomSheet, BottomSheetHeader, BottomSheetTitle } from "@/components/ui/bottom-sheet";
 import { Sparkles, Dumbbell, Plus, Loader2, AlertCircle } from "lucide-react";
 import type { ExerciseDefinition } from "@/lib/exerciseParser";
@@ -23,15 +23,27 @@ interface Props {
   exerciseLibrary: ExerciseDefinition[];
 }
 
+const ONE_HOUR = 60 * 60 * 1000;
+
 export default function RecommendationDrawer({ open, onClose, onLogRecommendation, exerciseLibrary }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ workoutSummary: string; recommendations: Recommendation[] } | null>(null);
+  const generatedAt = useRef<number | null>(null);
+
+  // Expire stale recommendations when the drawer reopens
+  useEffect(() => {
+    if (open && generatedAt.current !== null && Date.now() - generatedAt.current > ONE_HOUR) {
+      setResult(null);
+      generatedAt.current = null;
+    }
+  }, [open]);
 
   async function generate() {
     setLoading(true);
     setError(null);
     setResult(null);
+    generatedAt.current = null;
 
     try {
       const res = await fetch("/api/ai/recommend", {
@@ -42,6 +54,7 @@ export default function RecommendationDrawer({ open, onClose, onLogRecommendatio
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to generate");
       setResult(data);
+      generatedAt.current = Date.now();
     } catch (e: any) {
       setError(e.message);
     }
@@ -49,7 +62,6 @@ export default function RecommendationDrawer({ open, onClose, onLogRecommendatio
   }
 
   function handleClose() {
-    setResult(null);
     setError(null);
     onClose();
   }
