@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await authClient.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { provider = "openrouter", exerciseLibrary } = await request.json();
+  const { provider = "openrouter", exerciseLibrary, comment } = await request.json();
   const supabase = createServiceClient();
   const userId = user.id;
 
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   // Build prompt
-  const prompt = buildPrompt(profile, sessions, exerciseLibrary);
+  const prompt = buildPrompt(profile, sessions, exerciseLibrary, comment);
 
   // Call AI provider
   let result: { workoutSummary: string; recommendations: RecommendationItem[] };
@@ -78,8 +78,9 @@ export async function POST(request: NextRequest) {
 
 // ─── Prompt builder ──────────────────────────────────────────────────────────
 
-function buildPrompt(profile: any, sessions: any[], library: any[]) {
-  let p = "User Profile:\n";
+function buildPrompt(profile: any, sessions: any[], library: any[], comment?: string) {
+  let p = comment?.trim() ? `${comment.trim()}\n\n` : "";
+  p += "User Profile:\n";
   if (profile?.name) p += `- Name: ${profile.name}\n`;
   if (profile?.year_of_birth) p += `- Age: ${new Date().getFullYear() - profile.year_of_birth}\n`;
   if (profile?.gender) p += `- Gender: ${profile.gender}\n`;

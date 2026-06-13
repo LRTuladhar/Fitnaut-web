@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { BottomSheet, BottomSheetHeader, BottomSheetTitle } from "@/components/ui/bottom-sheet";
-import { Sparkles, Dumbbell, Plus, Loader2, AlertCircle } from "lucide-react";
+import { Sparkles, Dumbbell, Plus, Loader2, AlertCircle, MessageSquare } from "lucide-react";
 import type { ExerciseDefinition } from "@/lib/exerciseParser";
 import type { EditExercise } from "@/components/workout/ManualEntryDrawer";
 
@@ -29,6 +29,7 @@ export default function RecommendationDrawer({ open, onClose, onLogRecommendatio
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{ workoutSummary: string; recommendations: Recommendation[] } | null>(null);
+  const [comment, setComment] = useState("");
   const generatedAt = useRef<number | null>(null);
 
   // Expire stale recommendations when the drawer reopens
@@ -49,7 +50,7 @@ export default function RecommendationDrawer({ open, onClose, onLogRecommendatio
       const res = await fetch("/api/ai/recommend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider: "openrouter", exerciseLibrary }),
+        body: JSON.stringify({ provider: "openrouter", exerciseLibrary, comment: comment.trim() || undefined }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Failed to generate");
@@ -106,6 +107,23 @@ export default function RecommendationDrawer({ open, onClose, onLogRecommendatio
                   Analyzes your last 5 sessions to recommend what to train today.
                 </p>
               </div>
+
+              <div className="w-full max-w-[260px] space-y-1.5">
+                <div className="flex items-center gap-1.5 text-left">
+                  <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Comments for AI</span>
+                </div>
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  maxLength={300}
+                  placeholder='e.g. "I have a sore knee, avoid leg exercises"'
+                  rows={3}
+                  className="w-full text-xs bg-secondary border-0 rounded-xl p-3 resize-none placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <p className="text-[10px] text-muted-foreground/50 text-right">{comment.length}/300</p>
+              </div>
+
               <button onClick={generate}
                 className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-white font-semibold text-sm active:scale-95 transition-transform shadow-lg shadow-blue-500/20">
                 <Sparkles className="w-4 h-4" />
@@ -130,6 +148,23 @@ export default function RecommendationDrawer({ open, onClose, onLogRecommendatio
                 <p className="font-semibold text-sm">Couldn't generate recommendations</p>
                 <p className="text-xs text-muted-foreground mt-1 max-w-[240px]">{error}</p>
               </div>
+
+              <div className="w-full max-w-[260px] space-y-1.5">
+                <div className="flex items-center gap-1.5 text-left">
+                  <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Comments for AI</span>
+                </div>
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  maxLength={300}
+                  placeholder='e.g. "I have a sore knee, avoid leg exercises"'
+                  rows={3}
+                  className="w-full text-xs bg-secondary border-0 rounded-xl p-3 resize-none placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <p className="text-[10px] text-muted-foreground/50 text-right">{comment.length}/300</p>
+              </div>
+
               <button onClick={generate}
                 className="px-5 py-2.5 rounded-xl bg-secondary text-sm font-semibold active:scale-95 transition-transform">
                 Try Again
@@ -174,6 +209,22 @@ export default function RecommendationDrawer({ open, onClose, onLogRecommendatio
                     <p className="text-xs text-muted-foreground leading-relaxed">{rec.reasoning}</p>
                   </div>
                 ))}
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">Comments for AI</span>
+                </div>
+                <textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  maxLength={300}
+                  placeholder='e.g. "I have a sore knee, avoid leg exercises"'
+                  rows={2}
+                  className="w-full text-xs bg-secondary border-0 rounded-xl p-3 resize-none placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <p className="text-[10px] text-muted-foreground/50 text-right">{comment.length}/300</p>
               </div>
 
               <button onClick={generate}
